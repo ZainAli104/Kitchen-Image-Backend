@@ -1,0 +1,156 @@
+import express from "express";
+import fs from "fs";
+import path from "path";
+import * as dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import multer from "multer";
+import sharp from "sharp";
+import axios from "axios";
+import { Configuration, OpenAIApi } from "openai";
+import nodemailer from "nodemailer";
+import sendGridTransport from "nodemailer-sendgrid-transport";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// let _maskPath = path.join(__dirname, "uploads", "mask.png");
+
+const upload = multer();
+dotenv.config();
+const router = express.Router();
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const openai = new OpenAIApi(configuration);
+
+router.route("/").get((req, res) => {
+  res.status(200).json({ message: "Hello from DALL-E!" });
+});
+
+router.route("/").post(upload.none(), async (req, res) => {
+  let imagePath = "";
+  
+  try {
+    const { data: { responseId, fields } } = req.body;
+
+    const { value: email } = fields.find(field => field.type === 'INPUT_EMAIL');
+    const { value: name } = fields.find(field => field.type === 'INPUT_TEXT');
+    const { value: number } = fields.find(field => field.type === 'INPUT_PHONE_NUMBER');
+    const { value: imgFile } = fields.find(field => field.type === 'FILE_UPLOAD');
+
+    // console.log(email, name, number);
+
+    if (imgFile && imgFile[0] && imgFile[0].url) {
+      const imageUrl = imgFile[0].url;
+
+      // Use axios to download the image as a Buffer
+      const response = await axios({
+        url: imageUrl,
+        method: 'GET',
+        responseType: 'arraybuffer',
+      });
+      const imageBuffer = Buffer.from(response.data, 'binary');
+
+      // Convert the image to PNG format and save it locally
+      const imageName = path.basename(imageUrl, path.extname(imageUrl)) + '.png';
+      imagePath = path.join(__dirname, "uploads", imageName);
+      await sharp(imageBuffer).png().toFile(imagePath);
+    }
+
+    // generate image
+    const aiResponse = await openai.createImageVariation(
+      fs.createReadStream(imagePath),
+      1,
+      "1024x1024",
+    );
+
+    const image = aiResponse.data.data[0].url;
+
+    // Send email
+    const transporter = nodemailer.createTransport(sendGridTransport({
+      auth: {
+        api_key: process.env.SENDGRID_API_KEY,
+      },
+    }));
+
+    let mailOptions = {
+      to: email,
+      from: 'whiteshadowgaming04@gmail.com',
+      subject: "AI Kitchen",
+      html: `<b>Hi ${name}, <hr/> Thanks for your message. This is image: ${image}</b>`,
+    };
+
+    let info = await transporter.sendMail(mailOptions);
+
+    // console.log("Message sent: ", info);
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    res.status(500).send(error || "Something went wrong");
+  } finally {
+    if (imagePath) {
+      await fs.promises.unlink(imagePath);
+    }
+  }
+});
+
+export default router;
+
+// router.route("/").post(upload.single("image"), async (req, res) => {
+//   let imagePath = "";
+
+//   try {
+//     const { prompt } = req.body;
+
+//     if (req.file) {
+//       const uploadedImage = req.file.buffer;
+
+//       imagePath = path.join(__dirname, "uploads", req.file.originalname);
+//       await fs.promises.writeFile(imagePath, uploadedImage);
+//     }
+
+//     // const imageMetadata = await sharp(imagePath).metadata();
+
+//     // sharp({
+//     //   create: {
+//     //     width: imageMetadata.width,
+//     //     height: imageMetadata.height,
+//     //     channels: 4,
+//     //     background: { r: 0, g: 0, b: 0, alpha: 26 }
+//     //   }
+//     // })
+//     // .png()
+//     // .toFile(maskPath);    // add a table of orange color
+
+//     const aiResponse = await openai.createImageVariation(
+//       fs.createReadStream(imagePath),
+//       1,
+//       "1024x1024",
+//       'b64_json'
+//     );
+//     // const aiResponse = await openai.createImageEdit(
+//     //   fs.createReadStream(imagePath),
+//     //   fs.createReadStream(_maskPath),
+//     //   prompt,
+//     //   1,
+//     //   "1024x1024",
+//     //   'b64_json'
+//     // );
+
+//     const image = aiResponse.data.data[0].b64_json;
+
+//     res.status(200).json({ photo: image });
+//   } catch (error) {
+//     res.status(500).send(error?.response.data.error.message || "Something went wrong");
+//   } finally {
+//     if (imagePath) {
+//       await fs.promises.unlink(imagePath);
+//     }
+//     // if (maskPath) {
+//     //   await fs.promises.unlink(maskPath);
+//     // }
+//   }
+// });

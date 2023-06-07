@@ -51,6 +51,8 @@ router.post("/", upload, async (req, res) => {
       imageStream = response.data;
     }
 
+    console.log('env: ', process.env.OPENAI_API_KEY);
+
     const aiResponse = await openai.createImageVariation(
       imageStream,
       1,
@@ -58,6 +60,8 @@ router.post("/", upload, async (req, res) => {
     );
 
     const image = aiResponse.data.data[0].url;
+
+    console.log("Image URL: ", image);
 
     const transporter = nodemailer.createTransport(
       sendGridTransport({
@@ -84,6 +88,7 @@ router.post("/", upload, async (req, res) => {
 
     res.status(200).json({ success: true });
   } catch (error) {
+    console.log('Error => ', error);
     res.status(500).send(error || "Something went wrong");
   } finally {
     if (imagePath) {

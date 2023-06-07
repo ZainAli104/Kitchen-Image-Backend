@@ -47,7 +47,6 @@ router.post("/", upload, async (req, res) => {
     let imageStream = null;
     if (imgFileField && imgFileField.value[0] && imgFileField.value[0].url) {
       const imageUrl = imgFileField.value[0].url;
-      console.log("imageUrl", imageUrl);
       const response = await axios.get(imageUrl, { responseType: "stream" });
       imageStream = response.data;
     }
@@ -59,8 +58,6 @@ router.post("/", upload, async (req, res) => {
     );
 
     const image = aiResponse.data.data[0].url;
-
-    console.log("image", image);
 
     const transporter = nodemailer.createTransport(
       sendGridTransport({

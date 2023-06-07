@@ -1,11 +1,11 @@
 import express from "express";
 import fs from "fs";
-// import path from "path";
+import path from "path";
 import * as dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import multer from "multer";
-// import sharp from "sharp";
+import sharp from "sharp";
 import axios from "axios";
 import { Configuration, OpenAIApi } from "openai";
 import nodemailer from "nodemailer";
@@ -44,23 +44,22 @@ router.post("/", upload, async (req, res) => {
     const name = nameField.value;
     const number = numberField.value;
 
-    let imageStream = null;
     if (imgFileField && imgFileField.value[0] && imgFileField.value[0].url) {
       const imageUrl = imgFileField.value[0].url;
-      console.log("imageUrl", imageUrl);
-      const response = await axios.get(imageUrl, { responseType: "stream" });
-      imageStream = response.data;
+      const response = await axios.get(imageUrl, { responseType: "arraybuffer" });
+      const imageBuffer = Buffer.from(response.data, "binary");
+      const imageName = path.basename(imageUrl, path.extname(imageUrl)) + ".png";
+      imagePath = path.join(__dirname, "uploads", imageName);
+      await sharp(imageBuffer).png().toFile(imagePath);
     }
 
     const aiResponse = await openai.createImageVariation(
-      imageStream,
+      fs.createReadStream(imagePath),
       1,
       "1024x1024"
     );
 
     const image = aiResponse.data.data[0].url;
-
-    console.log("image", image);
 
     const transporter = nodemailer.createTransport(
       sendGridTransport({

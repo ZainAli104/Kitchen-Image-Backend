@@ -2,8 +2,7 @@
   "version": 2,
   "routes": [{ "src": "/(.*)", "dest": "index.js" }],
   "functions": {
-    "routes/dalleRoutes.js": {
-      "runtime": "@vercel/node",
+    "api/dalleRoutes.js": {
       "maxDuration": 60
     }
   }

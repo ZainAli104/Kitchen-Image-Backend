@@ -2,8 +2,8 @@ import express from 'express';
 import * as dotenv from 'dotenv';
 import cors from 'cors';
 
-import dalleRoutes from './routes/dalleRoutes.js';
-import postRoutes from './routes/postRoutes.js';
+import dalleRoutes from './api/dalleRoutes.js';
+import postRoutes from './api/postRoutes.js';
 
 dotenv.config();
 

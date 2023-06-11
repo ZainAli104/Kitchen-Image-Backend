@@ -1,18 +1,10 @@
 import express from "express";
-import fs from "fs";
-// import path from "path";
 import * as dotenv from "dotenv";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
 import multer from "multer";
-// import sharp from "sharp";
 import axios from "axios";
 import { Configuration, OpenAIApi } from "openai";
 import nodemailer from "nodemailer";
 import sendGridTransport from "nodemailer-sendgrid-transport";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 dotenv.config();
 const router = express.Router();
@@ -30,19 +22,19 @@ router.get("/", (req, res) => {
 });
 
 router.post("/", upload, async (req, res) => {
-  let imagePath = "";
-  
   try {
     const { responseId, fields } = req.body.data;
 
     const emailField = fields.find((field) => field.type === "INPUT_EMAIL");
     const nameField = fields.find((field) => field.type === "INPUT_TEXT");
-    const numberField = fields.find((field) => field.type === "INPUT_PHONE_NUMBER");
+    // const numberField = fields.find((field) => field.type === "INPUT_PHONE_NUMBER");
     const imgFileField = fields.find((field) => field.type === "FILE_UPLOAD");
 
     const email = emailField.value;
     const name = nameField.value;
-    const number = numberField.value;
+    // const number = numberField.value;
+
+    res.status(200).json({ message: "Success" });
 
     let imageStream = null;
     if (imgFileField && imgFileField.value[0] && imgFileField.value[0].url) {
@@ -51,8 +43,6 @@ router.post("/", upload, async (req, res) => {
       imageStream = response.data;
     }
 
-    console.log('env: ', process.env.OPENAI_API_KEY);
-
     const aiResponse = await openai.createImageVariation(
       imageStream,
       1,
@@ -60,8 +50,6 @@ router.post("/", upload, async (req, res) => {
     );
 
     const image = aiResponse.data.data[0].url;
-
-    console.log("Image URL: ", image);
 
     const transporter = nodemailer.createTransport(
       sendGridTransport({
@@ -85,15 +73,9 @@ router.post("/", upload, async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-
-    res.status(200).json({ success: true });
   } catch (error) {
     console.log('Error => ', error);
     res.status(500).send(error || "Something went wrong");
-  } finally {
-    if (imagePath) {
-      await fs.promises.unlink(imagePath);
-    }
   }
 });
 

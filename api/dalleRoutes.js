@@ -4,7 +4,7 @@ import multer from "multer";
 import axios from "axios";
 import { Configuration, OpenAIApi } from "openai";
 import nodemailer from "nodemailer";
-import sendGridTransport from "nodemailer-sendgrid-transport";
+import sendGridTransport from "nodemailer-sendgrid-transport";  //https://kitchen-image-backend.vercel.app/api/v1/dalle
 
 dotenv.config();
 const router = express.Router();
@@ -50,6 +50,8 @@ router.post("/", upload, async (req, res) => {
     );
 
     const image = aiResponse.data.data[0].url;
+
+    console.log("Image URL => ", image);
 
     const transporter = nodemailer.createTransport(
       sendGridTransport({

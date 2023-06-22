@@ -30,6 +30,8 @@ router.post("/", upload, async (req, res) => {
     // const numberField = fields.find((field) => field.type === "INPUT_PHONE_NUMBER");
     const imgFileField = fields.find((field) => field.type === "FILE_UPLOAD");
 
+    console.log("image field => ", imgFileField);
+
     const email = emailField.value;
     const name = nameField.value;
     // const number = numberField.value;

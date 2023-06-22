@@ -38,6 +38,9 @@ router.post("/", upload, async (req, res) => {
 
     res.status(200).json({ message: "Success" });
 
+    console.log("--------------------------------------------------------------")
+    console.log("Email => ", email);
+
     let imageStream = null;
     if (imgFileField && imgFileField.value[0] && imgFileField.value[0].url) {
       const imageUrl = imgFileField.value[0].url;

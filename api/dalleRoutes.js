@@ -25,7 +25,7 @@ router.post("/", async (req, res) => {
     // const numberField = fields.find((field) => field.type === "INPUT_PHONE_NUMBER");
     // const number = numberField.value;
 
-    axios.post("https://parens.serveo.net/api/v1/post", {
+    axios.post("https://kitchen-image-backend.vercel.app/api/v1/post", {
       name,
       email,
       imageUrl,

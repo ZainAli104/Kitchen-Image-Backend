@@ -24,9 +24,11 @@ router.route("/").post(async (req, res) => {
   try {
     const { name, email, imageUrl } = req.body;
 
-    if (!name || !email || !imageUrl) {
-      return res.status(400).json({ message: "Required fields are missing" });
-    }
+    console.log(name, email, imageUrl)
+
+    // if (!name || !email || !imageUrl) {
+    //   return res.status(400).json({ message: "Required fields are missing" });
+    // }
     
     let imageStream = null;
     if (imageUrl) {

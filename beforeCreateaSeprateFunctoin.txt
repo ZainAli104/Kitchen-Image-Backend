@@ -1,12 +1,12 @@
 import express from "express";
 import * as dotenv from "dotenv";
-import nodemailer from "nodemailer";
-import sendGridTransport from "nodemailer-sendgrid-transport";
+import multer from "multer";
 import axios from "axios";
 import { Configuration, OpenAIApi } from "openai";
+import nodemailer from "nodemailer";
+import sendGridTransport from "nodemailer-sendgrid-transport";  //https://kitchen-image-backend.vercel.app/api/v1/dalle
 
 dotenv.config();
-
 const router = express.Router();
 
 const configuration = new Configuration({
@@ -15,21 +15,30 @@ const configuration = new Configuration({
 
 const openai = new OpenAIApi(configuration);
 
-router.route("/").get((req, res) => {
-  res.status(200).json({ message: "Post route page" });
+const upload = multer().none();
+
+router.get("/", (req, res) => {
+  res.status(200).json({ message: "Hello from DALL-E!" });
 });
 
-// POST => /api/v1/post
-router.route("/").post(async (req, res) => {
+router.post("/", upload, async (req, res) => {
   try {
-    const { name, email, imageUrl } = req.body;
+    const { responseId, fields } = req.body.data;
 
-    if (!name || !email || !imageUrl) {
-      return res.status(400).json({ message: "Required fields are missing" });
-    }
-    
+    const emailField = fields.find((field) => field.type === "INPUT_EMAIL");
+    const nameField = fields.find((field) => field.type === "INPUT_TEXT");
+    // const numberField = fields.find((field) => field.type === "INPUT_PHONE_NUMBER");
+    const imgFileField = fields.find((field) => field.type === "FILE_UPLOAD");
+
+    const email = emailField.value;
+    const name = nameField.value;
+    // const number = numberField.value;
+
+    res.status(200).json({ message: "Success" });
+
     let imageStream = null;
-    if (imageUrl) {
+    if (imgFileField && imgFileField.value[0] && imgFileField.value[0].url) {
+      const imageUrl = imgFileField.value[0].url;
       const response = await axios.get(imageUrl, { responseType: "stream" });
       imageStream = response.data;
     }
@@ -64,11 +73,9 @@ router.route("/").post(async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-
-    res.status(200).json({ success: true });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ success: false, message: error.message });
+    console.log('Error => ', error);
+    res.status(500).send(error || "Something went wrong");
   }
 });
 
